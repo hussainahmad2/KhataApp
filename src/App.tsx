@@ -1,5 +1,4 @@
-// React import not required in newer JSX setups
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { DateProvider } from './context/DateContext';
 import { LandingPage } from './pages/LandingPage';
@@ -28,28 +27,28 @@ function App() {
   return (
     <DateProvider>
       <Router>
-      <Routes>
-        {!user ? (
-          <>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </>
-        ) : (
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="customers" element={<Customers />} />
-            <Route path="vendors" element={<Vendors />} />
-            <Route path="inventory" element={<Inventory />} />
-            <Route path="invoices" element={<Invoices />} />
-            <Route path="transactions" element={<Transactions />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="reminders" element={<PaymentReminders />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Route>
-        )}
-      </Routes>
+        <Routes>
+          {!user ? (
+            <>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </>
+          ) : (
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="customers" element={<Customers />} />
+              <Route path="vendors" element={<Vendors />} />
+              <Route path="inventory" element={<Inventory />} />
+              <Route path="invoices" element={<Invoices />} />
+              <Route path="transactions" element={<Transactions />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="reminders" element={<PaymentReminders />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Route>
+          )}
+        </Routes>
       </Router>
     </DateProvider>
   );
