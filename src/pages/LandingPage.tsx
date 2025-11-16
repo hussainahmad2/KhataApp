@@ -292,46 +292,86 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            <div>
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">A</span>
-                </div>
-                <h3 className="text-white text-xl font-bold">AsaanKhaata</h3>
-              </div>
-              <p className="text-gray-400">
-                Simplifying accounting for businesses everywhere.
-              </p>
+     <footer className="bg-gray-900 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+          {/* Company Info */}
+          <div>
+            <div className="flex items-center space-x-3 mb-4">
+              {/* Logo Implementation */}
+              <img
+                src={`${process.env.PUBLIC_URL}/icon.png`}
+                alt="AsaanKhaata Logo"
+                className="w-10 h-10 rounded-lg"
+              />
+              <h3 className="text-white text-xl font-bold">AsaanKhaata</h3>
             </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Product</h4>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Features</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Security</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Contact</h4>
-              <p className="text-gray-400 mb-2">Developed by HA Developers</p>
-              <a
-                href="mailto:hussainahmadbilal@gmail.com"
-                className="text-blue-400 hover:text-blue-300 transition-colors"
-              >
-                hussainahmadbilal@gmail.com
-              </a>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 pt-8 text-center">
             <p className="text-gray-400">
-              © 2024 AsaanKhaata. All rights reserved.
+              Simplifying accounting for businesses everywhere.
             </p>
           </div>
+
+          {/* Product Links */}
+          <div>
+            <h4 className="text-white font-semibold mb-4">Product</h4>
+            <ul className="space-y-2">
+              <li>
+                <a
+                  href="#"
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  Features
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#"
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  Pricing
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#"
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  Security
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Contact Info and Image */}
+          <div className="relative">
+            <h4 className="text-white font-semibold mb-4">Contact</h4>
+            <p className="text-gray-400 mb-2">Developed by HA Developers</p>
+            <a
+              href="mailto:hussainahmadbilal@gmail.com"
+              className="text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              hussainahmadbilal@gmail.com
+            </a>
+
+            {/* Hussain Image - Hidden on small screens, shown on large */}
+            <div className="hidden lg:block absolute top-0 -right-44">
+              <img
+                src={`${process.env.PUBLIC_URL}/hussain.jpg`}
+                alt="Hussain Ahmad Bilal"
+                className="w-40 h-auto rounded-xl shadow-2xl ring-2 ring-blue-500/50"
+              />
+            </div>
+          </div>
         </div>
-      </footer>
+
+        {/* Copyright */}
+        <div className="border-t border-gray-800 pt-8 text-center">
+          <p className="text-gray-400">
+            © 2025 AsaanKhaata. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
 
       {/* Auth Modal */}
       <AuthModal
