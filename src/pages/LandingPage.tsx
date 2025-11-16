@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import icon from "../assets/icon.png";
 import { Link } from 'react-router-dom';
 import { AuthModal } from '../components/Auth/AuthModal';
 import {
@@ -76,7 +77,7 @@ export function LandingPage() {
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-3">
               <img 
-                src="/assets/icon.png" 
+                src={`${process.env.PUBLIC_URL}/icon.png`} 
                 alt="AsaanKhaata Logo" 
                 className="w-10 h-10 rounded-lg"
               />
