@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: './', // ✅ This line fixes blank page issue
+  base: './', // Relative paths work with HashRouter and GitHub Pages
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
