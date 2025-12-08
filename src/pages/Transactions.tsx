@@ -67,14 +67,33 @@ export function Transactions() {
     
     try {
       setLoading(true);
+      
+      // Fetch all transactions in batches (Supabase has a 1000 row limit per request)
+      let allTransactions: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
       const { data, error } = await supabase
         .from('transactions')
         .select('*')
         .eq('user_id', user.id)
         .order('transaction_date', { ascending: true })
-        .order('created_at', { ascending: true });
+          .order('created_at', { ascending: true })
+          .range(from, from + batchSize - 1);
 
       if (error) throw error;
+
+        if (data && data.length > 0) {
+          allTransactions = [...allTransactions, ...data];
+          from += batchSize;
+          // If we got less than batchSize, we've reached the end
+          hasMore = data.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
 
       // Load customers and vendors separately for entity names
       const [customersRes, vendorsRes] = await Promise.all([
@@ -85,7 +104,7 @@ export function Transactions() {
       const customers = customersRes.data || [];
       const vendors = vendorsRes.data || [];
 
-      const processedTransactions = data?.map(transaction => {
+      const processedTransactions = allTransactions.map(transaction => {
         const entity = transaction.entity_type === 'customer' 
           ? customers.find(c => c.id === transaction.entity_id)
           : vendors.find(v => v.id === transaction.entity_id);
@@ -95,7 +114,7 @@ export function Transactions() {
           entity_name: entity?.name || `#${transaction.entity_id}`,
           entity_email: entity?.email || ''
         };
-      }) || [];
+      });
 
       setTransactions(processedTransactions);
       calculateDailySummary(processedTransactions);

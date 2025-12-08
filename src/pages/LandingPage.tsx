@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import icon from "../assets/icon.png";
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import icon from '../assets/icon.png';
+import hussainImage from '../assets/hussain.jpg';
 import { AuthModal } from '../components/Auth/AuthModal';
 import {
   ChartBarIcon,
@@ -15,7 +15,6 @@ import {
 
 export function LandingPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
   const features = [
     {
@@ -63,8 +62,7 @@ export function LandingPage() {
     '24/7 customer support',
   ];
 
-  const openAuthModal = (mode: 'signin' | 'signup') => {
-    setAuthMode(mode);
+  const openAuthModal = () => {
     setIsAuthModalOpen(true);
   };
 
@@ -77,7 +75,7 @@ export function LandingPage() {
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-3">
               <img 
-                src={`${process.env.PUBLIC_URL}/icon.png`} 
+                src={icon} 
                 alt="AsaanKhaata Logo" 
                 className="w-10 h-10 rounded-lg"
               />
@@ -86,16 +84,10 @@ export function LandingPage() {
             </div>
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => openAuthModal('signin')}
-                className="text-gray-700 hover:text-blue-600 font-medium transition-colors px-4 py-2"
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => openAuthModal('signup')}
+                onClick={openAuthModal}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium shadow-lg shadow-blue-500/30"
               >
-                Get Started
+                Sign In
               </button>
             </div>
           </div>
@@ -125,10 +117,10 @@ export function LandingPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <button
-                  onClick={() => openAuthModal('signup')}
+                  onClick={openAuthModal}
                   className="group bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 transform hover:-translate-y-1 flex items-center justify-center"
                 >
-                  Start Free Trial
+                  Sign In
                   <ArrowRightIcon className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -281,13 +273,13 @@ export function LandingPage() {
             Join thousands of businesses already using AsaanKhaata to streamline their accounting and focus on what matters most—growth.
           </p>
           <button
-            onClick={() => openAuthModal('signup')}
+            onClick={openAuthModal}
             className="bg-white text-blue-600 px-10 py-5 rounded-xl text-lg font-bold hover:bg-gray-50 transition-all duration-200 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 inline-flex items-center"
           >
-            Start Your Free Trial
+            Sign In
             <ArrowRightIcon className="w-5 h-5 ml-2" />
           </button>
-          <p className="text-blue-100 mt-6">No credit card required • Free for 30 days</p>
+          <p className="text-blue-100 mt-6">Access your account to manage your business</p>
         </div>
       </section>
 
@@ -300,7 +292,7 @@ export function LandingPage() {
             <div className="flex items-center space-x-3 mb-4">
               {/* Logo Implementation */}
               <img
-                src={`${process.env.PUBLIC_URL}/icon.png`}
+                src={icon}
                 alt="AsaanKhaata Logo"
                 className="w-10 h-10 rounded-lg"
               />
@@ -348,17 +340,23 @@ export function LandingPage() {
             <p className="text-gray-400 mb-2">Developed by HA Developers</p>
             <a
               href="mailto:hussainahmadbilal@gmail.com"
-              className="text-blue-400 hover:text-blue-300 transition-colors"
+              className="text-blue-400 hover:text-blue-300 transition-colors block mb-2"
             >
               hussainahmadbilal@gmail.com
             </a>
+            <a
+              href="tel:+923243439430"
+              className="text-blue-400 hover:text-blue-300 transition-colors block"
+            >
+              +92 324-3439430
+            </a>
 
             {/* Hussain Image - Hidden on small screens, shown on large */}
-            <div className="hidden lg:block absolute top-0 -right-44">
+            <div className="hidden lg:block absolute top-1/2 -translate-y-1/2 -right-48">
               <img
-                src={`${process.env.PUBLIC_URL}/hussain.jpg`}
+                src={hussainImage}
                 alt="Hussain Ahmad Bilal"
-                className="w-40 h-auto rounded-xl shadow-2xl ring-2 ring-blue-500/50"
+                className="w-40 h-48 rounded-xl shadow-2xl ring-2 ring-blue-500/50 object-cover"
               />
             </div>
           </div>
@@ -377,7 +375,7 @@ export function LandingPage() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        mode={authMode}
+        mode="signin"
       />
     </div>
   );

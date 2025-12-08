@@ -8,19 +8,17 @@ import { useNavigate } from 'react-router-dom';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  mode: 'signin' | 'signup';
+  mode?: 'signin' | 'signup'; // Kept for backward compatibility, but only signin is supported
 }
 
-export function AuthModal({ isOpen, onClose, mode }: AuthModalProps) {
-
-  const [currentMode, setCurrentMode] = useState(mode);
+export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,22 +27,12 @@ export function AuthModal({ isOpen, onClose, mode }: AuthModalProps) {
     setError('');
 
     try {
-      if (currentMode === 'signin') {
-        const { error } = await signIn(email, password);
-        if (error) {
-          setError(error.message);
-        } else {
-          navigate('/dashboard');
-          onClose();
-        }
+      const { error } = await signIn(email, password, rememberMe);
+      if (error) {
+        setError(error.message);
       } else {
-        const { error } = await signUp(email, password, fullName);
-        if (error) {
-          setError(error.message);
-        } else {
-          navigate('/dashboard');
-          onClose();
-        }
+        navigate('/dashboard');
+        onClose();
       }
     } catch (err) {
       setError('An unexpected error occurred');
@@ -52,11 +40,6 @@ export function AuthModal({ isOpen, onClose, mode }: AuthModalProps) {
       setLoading(false);
     }
   };
-
-   const toggleMode = () => {
-     setCurrentMode(currentMode === 'signin' ? 'signup' : 'signin');
-     setError('');
-   };
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -92,12 +75,10 @@ export function AuthModal({ isOpen, onClose, mode }: AuthModalProps) {
                   <div className="flex justify-between items-start mb-8">
                     <div>
                       <Dialog.Title as="h3" className="text-3xl font-bold text-gray-900 mb-2">
-                        {currentMode === 'signin' ? 'Welcome Back' : 'Create Account'}
+                        Welcome Back
                       </Dialog.Title>
                       <p className="text-sm text-gray-500">
-                        {currentMode === 'signin' 
-                          ? 'Enter your credentials to access your account' 
-                          : 'Fill in your details to get started'}
+                        Enter your credentials to access your account
                       </p>
                     </div>
                     <button
@@ -109,22 +90,6 @@ export function AuthModal({ isOpen, onClose, mode }: AuthModalProps) {
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-5">
-                    {currentMode === 'signup' && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Full Name
-                        </label>
-                        <input
-                          type="text"
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
-                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all"
-                          placeholder="John Doe"
-                          required
-                        />
-                      </div>
-                    )}
-                    
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Email Address
@@ -154,16 +119,27 @@ export function AuthModal({ isOpen, onClose, mode }: AuthModalProps) {
                       />
                     </div>
 
-                    {currentMode === 'signin' && (
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                        >
-                          Forgot password?
-                        </button>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <input
+                          id="remember-me"
+                          name="remember-me"
+                          type="checkbox"
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                          Remember me
+                        </label>
                       </div>
-                    )}
+                      <button
+                        type="button"
+                        className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
 
                     {error && (
                       <div className="text-red-600 text-sm bg-red-50 p-3 rounded-xl border border-red-100">
@@ -176,36 +152,9 @@ export function AuthModal({ isOpen, onClose, mode }: AuthModalProps) {
                       disabled={loading}
                       className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3.5 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     >
-                      {loading ? 'Loading...' : (currentMode === 'signin' ? 'Sign In' : 'Create Account')}
+                      {loading ? 'Loading...' : 'Sign In'}
                     </button>
                   </form>
-
-                  
-                  <div className="mt-6">
-                    <div className="relative mb-6">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-200"></div>
-                      </div>
-                      <div className="relative flex justify-center text-sm">
-                        <span className="px-3 bg-white text-gray-500">or</span>
-                      </div>
-                    </div>
-                    
-                    <div className="text-center">
-                      <button
-                        onClick={toggleMode}
-                        type="button"
-                        className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                      >
-                        {currentMode === 'signin'
-                          ? "Don't have an account? "
-                          : 'Already have an account? '}
-                        <span className="font-semibold text-blue-600 hover:text-blue-700 hover:underline">
-                          {currentMode === 'signin' ? 'Sign up' : 'Sign in'}
-                        </span>
-                      </button>
-                    </div>
-                  </div>
 
                 </div>
               </Dialog.Panel>

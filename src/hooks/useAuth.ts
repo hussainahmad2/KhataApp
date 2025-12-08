@@ -24,11 +24,22 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe: boolean = false) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
+    // If remember me is checked, persist the session
+    if (!error && data.session && rememberMe) {
+      // Supabase automatically persists sessions, but we can set a longer expiry
+      // The session is already stored in localStorage by default
+      localStorage.setItem('rememberMe', 'true');
+    } else if (!error && !rememberMe) {
+      // If not checked, session will still persist but user can manually clear it
+      localStorage.removeItem('rememberMe');
+    }
+    
     return { data, error };
   };
 
