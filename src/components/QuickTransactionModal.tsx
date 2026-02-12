@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useDate } from '../context/DateContext';
+import { Transaction } from '../pages/Transactions';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface Customer {
@@ -27,9 +28,10 @@ interface QuickTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialTransaction?: Transaction | null;
 }
 
-export function QuickTransactionModal({ isOpen, onClose, onSuccess }: QuickTransactionModalProps) {
+export function QuickTransactionModal({ isOpen, onClose, onSuccess, initialTransaction }: QuickTransactionModalProps) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,10 +53,30 @@ export function QuickTransactionModal({ isOpen, onClose, onSuccess }: QuickTrans
   useEffect(() => {
     if (isOpen) {
       loadEntities();
-      // when modal opens, use the global selected date as default
-      setFormData(prev => ({ ...prev, transaction_date: selectedDate }));
+      if (initialTransaction) {
+        setFormData({
+          entity_type: initialTransaction.entity_type,
+          entity_id: initialTransaction.entity_id.toString(),
+          transaction_type: initialTransaction.transaction_type,
+          amount: initialTransaction.amount.toString(),
+          description: initialTransaction.description || '',
+          reference: initialTransaction.reference || '',
+          transaction_date: initialTransaction.transaction_date.split('T')[0]
+        });
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          transaction_date: selectedDate || new Date().toISOString().split('T')[0],
+          entity_type: 'customer',
+          entity_id: '',
+          transaction_type: 'debit',
+          amount: '',
+          description: '',
+          reference: ''
+        }));
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, initialTransaction]);
 
   const loadEntities = async () => {
     try {
@@ -109,7 +131,7 @@ export function QuickTransactionModal({ isOpen, onClose, onSuccess }: QuickTrans
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!formData.entity_id || !formData.amount || parseFloat(formData.amount) <= 0 || parseInt(formData.entity_id) <= 0) {
       setError('Please fill in all required fields with valid values. ID and amount must be positive numbers.');
       return;
@@ -127,9 +149,20 @@ export function QuickTransactionModal({ isOpen, onClose, onSuccess }: QuickTrans
         transaction_date: formData.transaction_date
       };
 
-      const { error } = await supabase
-        .from('transactions')
-        .insert([transactionData]);
+      let error;
+
+      if (initialTransaction) {
+        const { error: updateError } = await supabase
+          .from('transactions')
+          .update(transactionData)
+          .eq('id', initialTransaction.id);
+        error = updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('transactions')
+          .insert([transactionData]);
+        error = insertError;
+      }
 
       if (error) throw error;
 
@@ -182,8 +215,8 @@ export function QuickTransactionModal({ isOpen, onClose, onSuccess }: QuickTrans
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Quick Transaction Entry</h2>
-              <p className="text-sm text-gray-500">Add transaction for any customer or vendor</p>
+              <h2 className="text-xl font-bold text-gray-900">{initialTransaction ? 'Edit Transaction' : 'Quick Transaction Entry'}</h2>
+              <p className="text-sm text-gray-500">{initialTransaction ? 'Update details of the transaction' : 'Add transaction for any customer or vendor'}</p>
             </div>
           </div>
           <button
@@ -205,8 +238,8 @@ export function QuickTransactionModal({ isOpen, onClose, onSuccess }: QuickTrans
                 </label>
                 <select
                   value={formData.entity_type}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
                     entity_type: e.target.value as 'customer' | 'vendor',
                     entity_id: '' // Reset selection when type changes
                   }))}
@@ -406,7 +439,7 @@ export function QuickTransactionModal({ isOpen, onClose, onSuccess }: QuickTrans
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  Add Transaction
+                  {initialTransaction ? 'Update Transaction' : 'Add Transaction'}
                 </>
               )}
             </button>

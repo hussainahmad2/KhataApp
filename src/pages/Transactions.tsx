@@ -2,17 +2,18 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useDate } from '../context/DateContext';
-import { 
-  MagnifyingGlassIcon, 
-  DocumentArrowDownIcon, 
+import {
+  MagnifyingGlassIcon,
+  DocumentArrowDownIcon,
   PrinterIcon,
   FunnelIcon,
   CalendarDaysIcon,
   CurrencyDollarIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline';
+import { QuickTransactionModal } from '../components/QuickTransactionModal';
 
-interface Transaction {
+export interface Transaction {
   id: number;
   entity_type: 'customer' | 'vendor';
   entity_id: number;
@@ -51,6 +52,8 @@ export function Transactions() {
   const [dailySummary, setDailySummary] = useState<DailySummary[]>([]);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -64,10 +67,10 @@ export function Transactions() {
 
   const loadTransactions = async () => {
     if (!user?.id) return;
-    
+
     try {
       setLoading(true);
-      
+
       // Fetch all transactions in batches (Supabase has a 1000 row limit per request)
       let allTransactions: any[] = [];
       let from = 0;
@@ -75,15 +78,15 @@ export function Transactions() {
       let hasMore = true;
 
       while (hasMore) {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('transaction_date', { ascending: true })
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('transaction_date', { ascending: true })
           .order('created_at', { ascending: true })
           .range(from, from + batchSize - 1);
 
-      if (error) throw error;
+        if (error) throw error;
 
         if (data && data.length > 0) {
           allTransactions = [...allTransactions, ...data];
@@ -105,7 +108,7 @@ export function Transactions() {
       const vendors = vendorsRes.data || [];
 
       const processedTransactions = allTransactions.map(transaction => {
-        const entity = transaction.entity_type === 'customer' 
+        const entity = transaction.entity_type === 'customer'
           ? customers.find(c => c.id === transaction.entity_id)
           : vendors.find(v => v.id === transaction.entity_id);
 
@@ -203,7 +206,7 @@ export function Transactions() {
 
   const getTodaySummary = () => {
     const todaySummary = dailySummary.find(summary => summary.date === selectedDate);
-    
+
     if (!todaySummary) {
       return {
         total_debits: 0,
@@ -247,11 +250,11 @@ export function Transactions() {
         const description = transaction.description || '';
         const reference = transaction.reference || '';
         const currentBalance = transaction.runningBalance;
-        
+
         // Separate credit and debit amounts
         const creditAmount = transaction.transaction_type === 'credit' ? transaction.amount : 0;
         const debitAmount = transaction.transaction_type === 'debit' ? transaction.amount : 0;
-        
+
         return [
           `"${formattedDate}"`,
           `"${entityType}"`,
@@ -311,21 +314,21 @@ export function Transactions() {
                </thead>
                <tbody>
                  ${transactionsWithBalance.map(transaction => {
-                   const formattedDate = formatDate(transaction.transaction_date);
-                   const entityType = transaction.entity_type.toUpperCase();
-                   const entityName = transaction.entity_name || '';
-                   const description = transaction.description || '';
-                   const reference = transaction.reference || '';
-                   const currentBalance = transaction.runningBalance;
-                   
-                   const balanceClass = currentBalance > 0 ? 'balance-positive' : 
-                                      currentBalance < 0 ? 'balance-negative' : 'balance-zero';
-                   
-                   // Separate credit and debit amounts
-                   const creditAmount = transaction.transaction_type === 'credit' ? transaction.amount : 0;
-                   const debitAmount = transaction.transaction_type === 'debit' ? transaction.amount : 0;
-                   
-                   return `
+      const formattedDate = formatDate(transaction.transaction_date);
+      const entityType = transaction.entity_type.toUpperCase();
+      const entityName = transaction.entity_name || '';
+      const description = transaction.description || '';
+      const reference = transaction.reference || '';
+      const currentBalance = transaction.runningBalance;
+
+      const balanceClass = currentBalance > 0 ? 'balance-positive' :
+        currentBalance < 0 ? 'balance-negative' : 'balance-zero';
+
+      // Separate credit and debit amounts
+      const creditAmount = transaction.transaction_type === 'credit' ? transaction.amount : 0;
+      const debitAmount = transaction.transaction_type === 'debit' ? transaction.amount : 0;
+
+      return `
                      <tr>
                        <td>${formattedDate}</td>
                        <td class="entity-type">${entityType}</td>
@@ -337,7 +340,7 @@ export function Transactions() {
                        <td>${reference}</td>
                      </tr>
                    `;
-                 }).join('')}
+    }).join('')}
                </tbody>
              </table>
         
@@ -355,7 +358,7 @@ export function Transactions() {
     // Create both CSV and HTML files
     const csvBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const htmlBlob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
-    
+
     // Create download links
     const csvLink = document.createElement('a');
     const csvUrl = URL.createObjectURL(csvBlob);
@@ -365,7 +368,7 @@ export function Transactions() {
     document.body.appendChild(csvLink);
     csvLink.click();
     document.body.removeChild(csvLink);
-    
+
     // Also create HTML version
     const htmlLink = document.createElement('a');
     const htmlUrl = URL.createObjectURL(htmlBlob);
@@ -398,6 +401,11 @@ export function Transactions() {
     return { total_debits, total_credits, net_amount, transaction_count };
   };
   const filteredSummary = getFilteredSummary();
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setShowEditModal(true);
+  };
 
   return (
     <div className="p-6">
@@ -614,7 +622,11 @@ export function Transactions() {
                   </tr>
                 ) : (
                   filteredTransactions.map((transaction) => (
-                    <tr key={transaction.id} className="hover:bg-gray-50">
+                    <tr
+                      key={transaction.id}
+                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => handleEditTransaction(transaction)}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {new Date(transaction.transaction_date).toLocaleDateString()}
                       </td>
@@ -627,19 +639,17 @@ export function Transactions() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          transaction.transaction_type === 'debit' 
-                            ? 'bg-red-100 text-red-800' 
-                            : 'bg-green-100 text-green-800'
-                        }`}>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${transaction.transaction_type === 'debit'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-green-100 text-green-800'
+                          }`}>
                           {transaction.transaction_type.toUpperCase()}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">{transaction.description}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">
-                        <span className={`font-bold ${
-                          transaction.transaction_type === 'debit' ? 'text-red-600' : 'text-green-600'
-                        }`}>
+                        <span className={`font-bold ${transaction.transaction_type === 'debit' ? 'text-red-600' : 'text-green-600'
+                          }`}>
                           {transaction.transaction_type === 'debit' ? '+' : '-'}Rs. {transaction.amount.toLocaleString()}
                         </span>
                       </td>
@@ -653,177 +663,197 @@ export function Transactions() {
         )}
       </div>
 
-      {/* Export Modal */}
-      {showExportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Export Transactions</h3>
-              <button
-                onClick={() => setShowExportModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ×
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                <input
-                  type="date"
-                  value={dateFilter.startDate}
-                  onChange={(e) => setDateFilter(prev => ({ ...prev, startDate: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                <input
-                  type="date"
-                  value={dateFilter.endDate}
-                  onChange={(e) => setDateFilter(prev => ({ ...prev, endDate: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="text-sm text-gray-600">
-                Exporting {filteredTransactions.length} transactions
-              </div>
-            </div>
-            <div className="flex space-x-3 pt-4">
-              <button
-                onClick={() => setShowExportModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  exportToCSV();
-                  setShowExportModal(false);
-                }}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-              >
-                Export CSV
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Print Modal */}
-      {showPrintModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold">Transaction Report</h3>
-              <div className="flex space-x-2">
+
+      {/* Edit Transaction Modal */}
+      <QuickTransactionModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedTransaction(null);
+        }}
+        onSuccess={() => {
+          loadTransactions();
+          setShowEditModal(false);
+          setSelectedTransaction(null);
+        }}
+        initialTransaction={selectedTransaction}
+      />
+
+      {/* Export Modal */}
+      {
+        showExportModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Export Transactions</h3>
                 <button
-                  onClick={() => window.print()}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors print:hidden"
-                >
-                  <PrinterIcon className="h-4 w-4" />
-                  <span>Print</span>
-                </button>
-                <button
-                  onClick={() => setShowPrintModal(false)}
-                  className="text-gray-400 hover:text-gray-600 print:hidden"
+                  onClick={() => setShowExportModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
                 >
                   ×
                 </button>
               </div>
-            </div>
-
-            <div className="print-content">
-              {/* Header */}
-              <div className="text-center mb-8 border-b pb-4">
-                <h1 className="text-2xl font-bold text-gray-900">Transaction Report</h1>
-                <p className="text-gray-600">Generated on: {new Date().toLocaleDateString()}</p>
-                <p className="text-gray-600">
-                  Period: {dateFilter.startDate || 'All'} to {dateFilter.endDate || 'All'}
-                </p>
-              </div>
-
-              {/* Summary */}
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Summary</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium">Total Transactions:</span> {filteredTransactions.length}
-                  </div>
-                  <div>
-                    <span className="font-medium">Total Debits:</span> 
-                    <span className="text-red-600 font-bold ml-2">
-                      Rs. {filteredTransactions.filter(t => t.transaction_type === 'debit').reduce((sum, t) => sum + t.amount, 0).toLocaleString()}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="font-medium">Total Credits:</span> 
-                    <span className="text-green-600 font-bold ml-2">
-                      Rs. {filteredTransactions.filter(t => t.transaction_type === 'credit').reduce((sum, t) => sum + t.amount, 0).toLocaleString()}
-                    </span>
-                  </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={dateFilter.startDate}
+                    onChange={(e) => setDateFilter(prev => ({ ...prev, startDate: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={dateFilter.endDate}
+                    onChange={(e) => setDateFilter(prev => ({ ...prev, endDate: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="text-sm text-gray-600">
+                  Exporting {filteredTransactions.length} transactions
                 </div>
               </div>
-
-              {/* Transaction Details */}
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Transaction Details</h2>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border border-gray-300">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="border border-gray-300 px-4 py-2 text-left">Date</th>
-                        <th className="border border-gray-300 px-4 py-2 text-left">Entity</th>
-                        <th className="border border-gray-300 px-4 py-2 text-left">Type</th>
-                        <th className="border border-gray-300 px-4 py-2 text-left">Description</th>
-                        <th className="border border-gray-300 px-4 py-2 text-left">Amount</th>
-                        <th className="border border-gray-300 px-4 py-2 text-left">Reference</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredTransactions.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="border border-gray-300 px-4 py-2 text-center text-gray-500">
-                            No transactions found
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredTransactions.map((transaction) => (
-                          <tr key={transaction.id}>
-                            <td className="border border-gray-300 px-4 py-2">
-                              {new Date(transaction.transaction_date).toLocaleDateString()}
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2">
-                              {transaction.entity_name} ({transaction.entity_type})
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2">
-                              {transaction.transaction_type.toUpperCase()}
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2">{transaction.description}</td>
-                            <td className="border border-gray-300 px-4 py-2 font-mono">
-                              <span className={`font-bold ${
-                                transaction.transaction_type === 'debit' ? 'text-red-600' : 'text-green-600'
-                              }`}>
-                                {transaction.transaction_type === 'debit' ? '+' : '-'}Rs. {transaction.amount.toLocaleString()}
-                              </span>
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2">{transaction.reference}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="text-center text-sm text-gray-500 border-t pt-4">
-                <p>This is a computer-generated report. No signature required.</p>
+              <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={() => setShowExportModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    exportToCSV();
+                    setShowExportModal(false);
+                  }}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                >
+                  Export CSV
+                </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+
+      {/* Print Modal */}
+      {
+        showPrintModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold">Transaction Report</h3>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => window.print()}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors print:hidden"
+                  >
+                    <PrinterIcon className="h-4 w-4" />
+                    <span>Print</span>
+                  </button>
+                  <button
+                    onClick={() => setShowPrintModal(false)}
+                    className="text-gray-400 hover:text-gray-600 print:hidden"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              <div className="print-content">
+                {/* Header */}
+                <div className="text-center mb-8 border-b pb-4">
+                  <h1 className="text-2xl font-bold text-gray-900">Transaction Report</h1>
+                  <p className="text-gray-600">Generated on: {new Date().toLocaleDateString()}</p>
+                  <p className="text-gray-600">
+                    Period: {dateFilter.startDate || 'All'} to {dateFilter.endDate || 'All'}
+                  </p>
+                </div>
+
+                {/* Summary */}
+                <div className="mb-8">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Summary</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">Total Transactions:</span> {filteredTransactions.length}
+                    </div>
+                    <div>
+                      <span className="font-medium">Total Debits:</span>
+                      <span className="text-red-600 font-bold ml-2">
+                        Rs. {filteredTransactions.filter(t => t.transaction_type === 'debit').reduce((sum, t) => sum + t.amount, 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium">Total Credits:</span>
+                      <span className="text-green-600 font-bold ml-2">
+                        Rs. {filteredTransactions.filter(t => t.transaction_type === 'credit').reduce((sum, t) => sum + t.amount, 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Transaction Details */}
+                <div className="mb-8">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Transaction Details</h2>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border border-gray-300">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="border border-gray-300 px-4 py-2 text-left">Date</th>
+                          <th className="border border-gray-300 px-4 py-2 text-left">Entity</th>
+                          <th className="border border-gray-300 px-4 py-2 text-left">Type</th>
+                          <th className="border border-gray-300 px-4 py-2 text-left">Description</th>
+                          <th className="border border-gray-300 px-4 py-2 text-left">Amount</th>
+                          <th className="border border-gray-300 px-4 py-2 text-left">Reference</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredTransactions.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="border border-gray-300 px-4 py-2 text-center text-gray-500">
+                              No transactions found
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredTransactions.map((transaction) => (
+                            <tr key={transaction.id}>
+                              <td className="border border-gray-300 px-4 py-2">
+                                {new Date(transaction.transaction_date).toLocaleDateString()}
+                              </td>
+                              <td className="border border-gray-300 px-4 py-2">
+                                {transaction.entity_name} ({transaction.entity_type})
+                              </td>
+                              <td className="border border-gray-300 px-4 py-2">
+                                {transaction.transaction_type.toUpperCase()}
+                              </td>
+                              <td className="border border-gray-300 px-4 py-2">{transaction.description}</td>
+                              <td className="border border-gray-300 px-4 py-2 font-mono">
+                                <span className={`font-bold ${transaction.transaction_type === 'debit' ? 'text-red-600' : 'text-green-600'
+                                  }`}>
+                                  {transaction.transaction_type === 'debit' ? '+' : '-'}Rs. {transaction.amount.toLocaleString()}
+                                </span>
+                              </td>
+                              <td className="border border-gray-300 px-4 py-2">{transaction.reference}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="text-center text-sm text-gray-500 border-t pt-4">
+                  <p>This is a computer-generated report. No signature required.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 }
